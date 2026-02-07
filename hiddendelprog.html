@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Roll20 Log Cleaner</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --shadow: 0 10px 25px rgba(0,0,0,.06);
+      --shadow2: 0 6px 16px rgba(0,0,0,.08);
+      --primary:#2563eb;
+      --danger:#dc2626;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height:1.5;
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    h2{
+      margin:0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.2px;
+    }
+
+    .links{
+      margin: 6px 0 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .links a{
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .links a:hover{ text-decoration: underline; }
+
+    .meta{
+      margin: 10px 0 14px;
+      padding: 12px 12px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .meta p{ margin: 6px 0; }
+
+    textarea{
+      width:100%;
+      height: 240px;
+      padding: 12px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+      outline: none;
+      resize: vertical;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,.02);
+      font-size: 14px;
+    }
+    textarea:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+
+    .row{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+
+    button{
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 9999px; /* 완전 동그랗게 */
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform .05s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    button:hover{
+      box-shadow: var(--shadow2);
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+    }
+    button:active{
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+
+    /* 버튼 스타일 구분 */
+    #runAll{
+      background: var(--primary);
+      color:#fff;
+      border-color: rgba(37,99,235,.0);
+    }
+    #runAll:hover{ filter: brightness(0.98); }
+
+    #copy{
+      background:#111827;
+      color:#fff;
+      border-color: rgba(17,24,39,.0);
+    }
+
+    #clear{
+      background: var(--danger);
+      color:#fff;
+      border-color: rgba(220,38,38,.0);
+    }
+    #clear:hover{ filter: brightness(0.98); }
+
+    .status{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      background:#fff;
+      font-size: 13.5px;
+      min-height: 38px;
+      display:flex;
+      align-items:center;
+    }
+
+    .out{
+      margin-top: 10px;
+      height: 240px;
+    }
+
+    .footer-note{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h2>~Roll20 로그 정리 도구~</h2>
+
+      <div class="links">
+        <div>
+          개발자:
+          <a href="https://r-pizzza.tistory.com/" target="_blank" rel="noopener noreferrer">
+            https://r-pizzza.tistory.com/
+          </a>
+        </div>
+        <div>
+          사용 방법(티스토리에 로그 백업까지):
+          <a href="https://r-pizzza.tistory.com/84" target="_blank" rel="noopener noreferrer">
+            https://r-pizzza.tistory.com/84
+          </a>
+        </div>
+      </div>
+
+      <div class="meta">
+        <p>사용법 : roll20에서 ctrl+a, ctrl+c (전체복사) → 아래에 ctrl+v (붙여넣기) → 원하는 버튼 클릭 → 결과 복사</p>
+        <p>결과 복사로 결과 소스코드를 복사해서 티스토리에 붙여넣으면 간편하게 백업이 완료됩니다!</p>
+      </div>
+
+      <textarea id="input" placeholder="이 곳에 Roll20 채팅 로그(HTML)를 붙여넣으세요!"></textarea>
+
+      <div class="row">
+        <button id="runAll">일괄 실행(추천)</button>
+        <button id="removeHidden">'the message has been hidden' 블록 삭제</button>
+        <button id="resizeDice">다이스 박스 크기 조절</button>
+        <button id="copy">결과 복사</button>
+        <button id="clear">다시 하기(비우기)</button>
+      </div>
+
+      <div class="status" id="stats"></div>
+
+      <textarea id="output" class="out" placeholder="정리된 결과가 여기 나옵니다." readonly></textarea>
+
+      <div class="footer-note">
+        ※ 무료 프로그램입니다. 무단복제는 엄금합니다.
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+
+
+    const TARGET_TEXT = "This message has been hidden.";
+
+    const inputEl = document.getElementById("input");
+    const outputEl = document.getElementById("output");
+    const statsEl = document.getElementById("stats");
+
+    function setOutput(html, msg) {
+      outputEl.value = html;
+      statsEl.textContent = msg || "";
+    }
+
+    inputEl.addEventListener("paste", (e) => {
+      const cd = e.clipboardData;
+      if (!cd) return;
+
+      const html = cd.getData("text/html");
+      if (html && html.trim()) {
+        e.preventDefault();
+
+        const start = inputEl.selectionStart ?? inputEl.value.length;
+        const end = inputEl.selectionEnd ?? inputEl.value.length;
+
+        inputEl.value = inputEl.value.slice(0, start) + html + inputEl.value.slice(end);
+        const pos = start + html.length;
+        inputEl.setSelectionRange(pos, pos);
+
+        statsEl.textContent = "HTML(소스)로 붙여넣었습니다.";
+      }
+    });
+
+    function replaceDiceBoxWidth(htmlString) {
+      const re = /rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)([^"]*?)width\s*:\s*\d+\s*px\s*;/gi;
+
+      let count = 0;
+      const out = htmlString.replace(re, (match) => {
+        count++;
+        return match.replace(/width\s*:\s*\d+\s*px\s*;/i, "width: 100%;");
+      });
+
+      return { out, count };
+    }
+
+    function removeHiddenBlocks(htmlString) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlString, "text/html");
+
+      const messages = Array.from(doc.querySelectorAll("div.message"));
+      let removed = 0;
+
+      for (const msg of messages) {
+        const t = (msg.textContent || "").trim();
+        if (t.includes(TARGET_TEXT)) {
+          msg.remove();
+          removed++;
+        }
+      }
+
+      return { out: doc.body.innerHTML, removed };
+    }
+
+    document.getElementById("runAll").addEventListener("click", () => {
+      const raw = inputEl.value || "";
+      if (!raw.trim()) {
+        setOutput("", "입력값이 비어 있습니다.");
+        return;
+      }
+
+      const rep = replaceDiceBoxWidth(raw);
+      const rm = removeHiddenBlocks(rep.out);
+
+      setOutput(rm.out, `전체 실행 완료: hidden ${rm.removed}개 제거 / 다이스박스 ${rep.count}곳 변경`);
+    });
+
+    document.getElementById("removeHidden").addEventListener("click", () => {
+      const raw = inputEl.value || "";
+      if (!raw.trim()) {
+        setOutput("", "입력값이 비어 있습니다.");
+        return;
+      }
+
+      const rm = removeHiddenBlocks(raw);
+      setOutput(rm.out, `hidden 블록 삭제 완료: ${rm.removed}개 제거됨`);
+    });
+
+    document.getElementById("resizeDice").addEventListener("click", () => {
+      const raw = inputEl.value || "";
+      if (!raw.trim()) {
+        setOutput("", "입력값이 비어 있습니다.");
+        return;
+      }
+
+      const rep = replaceDiceBoxWidth(raw);
+      setOutput(rep.out, `다이스 박스 크기 조절 완료: ${rep.count}곳 (px → 100%)`);
+    });
+
+    document.getElementById("copy").addEventListener("click", async () => {
+      const text = outputEl.value || "";
+      if (!text.trim()) {
+        statsEl.textContent = "복사할 결과가 없습니다.";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        statsEl.textContent = "결과를 클립보드에 복사했습니다.";
+      } catch (e) {
+        outputEl.focus();
+        outputEl.select();
+        statsEl.textContent = "자동 복사가 막혔습니다. 결과가 선택됐으니 Ctrl+C로 복사하세요.";
+      }
+    });
+
+    document.getElementById("clear").addEventListener("click", () => {
+      const ok = confirm("정말로 비우시겠습니까?\n입력/결과 내용이 모두 삭제됩니다.");
+      if (!ok) return;
+
+      inputEl.value = "";
+      outputEl.value = "";
+      statsEl.textContent = "";
+    });
+  </script>
+</body>
+</html>
