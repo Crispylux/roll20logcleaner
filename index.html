@@ -244,12 +244,12 @@
     });
 
     function replaceDiceBoxWidth(htmlString) {
-      const re = /rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)([^"]*?)width\s*:\s*\d+\s*px\s*;/gi;
+      const re = /rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)([^"]*?)width\s*:\s*\d+(?:\.\d+)?\s*px\s*;/gi;
 
       let count = 0;
       const out = htmlString.replace(re, (match) => {
         count++;
-        return match.replace(/width\s*:\s*\d+\s*px\s*;/i, "width: 100%;");
+        return match.replace(/width\s*:\s*\d+(?:\.\d+)?\s*px\s*;/i, "width: 100%;");
       });
 
       return { out, count };
