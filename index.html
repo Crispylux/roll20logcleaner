@@ -35,7 +35,7 @@
     .card{
       background:var(--card);
       border:1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 0;
       box-shadow: var(--shadow);
       padding: 18px;
     }
@@ -66,7 +66,7 @@
       padding: 12px 12px;
       background: #f9fafb;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 0;
       color: var(--muted);
       font-size: 14px;
     }
@@ -77,7 +77,7 @@
       height: 240px;
       padding: 12px 12px;
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 0;
       background: #fff;
       outline: none;
       resize: vertical;
@@ -97,52 +97,29 @@
     }
 
     button{
-      border: 1px solid var(--border);
-      background: #fff;
+      border: 1px solid #9ca3af;
+      background: transparent;
       color: var(--text);
       padding: 10px 14px;
-      border-radius: 9999px; /* 완전 동그랗게 */
+      border-radius: 0;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 400;
       font-size: 14px;
-      transition: transform .05s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      box-shadow: 0 2px 6px rgba(0,0,0,.12);
+      transition: border-color .15s ease, color .15s ease, box-shadow .15s ease;
     }
-    button:hover{
-      box-shadow: var(--shadow2);
-      border-color: #d1d5db;
-      transform: translateY(-1px);
-    }
-    button:active{
-      transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(0,0,0,.04);
-    }
+    button:hover{ border-color: var(--text); box-shadow: 0 4px 10px rgba(0,0,0,.16); }
+    button:active{ opacity: .6; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 
-    /* 버튼 스타일 구분 */
-    #runAll{
-      background: var(--primary);
-      color:#fff;
-      border-color: rgba(37,99,235,.0);
-    }
-    #runAll:hover{ filter: brightness(0.98); }
-
-    #copy{
-      background:#111827;
-      color:#fff;
-      border-color: rgba(17,24,39,.0);
-    }
-
-    #clear{
-      background: var(--danger);
-      color:#fff;
-      border-color: rgba(220,38,38,.0);
-    }
-    #clear:hover{ filter: brightness(0.98); }
+    /* 버튼 구분: 테두리와 글자 색으로만 */
+    #runAll{ border-color: var(--primary); color: var(--primary); }
+    #copy{ border-color: #111827; color: #111827; }
+    #clear{ border-color: var(--danger); color: var(--danger); }
 
     .status{
       margin-top: 10px;
       padding: 10px 12px;
-      border-radius: 12px;
+      border-radius: 0;
       border: 1px dashed var(--border);
       color: var(--muted);
       background:#fff;
@@ -167,7 +144,7 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h2>~Roll20 로그 정리 도구~</h2>
+      <h2>[Tistory 전용] Roll20 로그 정리 도구</h2>
 
       <div class="links">
         <div>
@@ -195,6 +172,9 @@
         <button id="runAll">일괄 실행(추천)</button>
         <button id="removeHidden">'the message has been hidden' 블록 삭제</button>
         <button id="resizeDice">다이스 박스 크기 조절</button>
+        <button id="addSearch">검색 바 추가</button>
+      </div>
+      <div class="row">
         <button id="copy">결과 복사</button>
         <button id="clear">다시 하기(비우기)</button>
       </div>
@@ -214,6 +194,167 @@
 
 
     const TARGET_TEXT = "This message has been hidden.";
+
+    // 글 맨 위에 붙일 검색 상단 바
+    const SEARCH_BAR_HTML = `<!-- 검색 상단 바 -->
+<div class="tsf-wrap">
+<div class="tsf-box"><input class="tsf-input" autocomplete="off" type="text" placeholder="검색" /> <span class="tsf-count">0/0</span> <button class="tsf-btn tsf-prev" type="button" aria-label="이전">▲</button> <button class="tsf-btn tsf-next" type="button" aria-label="다음">▼</button></div>
+</div>
+<p data-ke-size="size16">&nbsp;</p>
+<div>
+<style>
+  .tsf-wrap{ margin:0 0 16px; }
+  .tsf-box{
+    display:flex; align-items:center; gap:6px;
+    box-sizing:border-box; margin:0; padding:8px 10px;
+    background:#fff; border:1px solid #ddd; border-radius:0;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+  }
+  .tsf-box.tsf-fixed{ position:fixed; top:0; z-index:9999; }
+  .tsf-input{
+    flex:1; min-width:0; padding:6px 8px;
+    -webkit-appearance:none; appearance:none;
+    font-size:16px; /* 16px 미만이면 아이폰에서 화면이 확대됨 */
+    border:1px solid #ccc; border-radius:0; outline:none; color:#222; background:#fff;
+  }
+  .tsf-input:focus{ border-color:#888; }
+  .tsf-count{ font-size:13px; color:#666; white-space:nowrap; min-width:36px; text-align:center; }
+  .tsf-btn{
+    width:28px; height:32px; padding:0; flex-shrink:0;
+    -webkit-appearance:none; appearance:none;
+    -webkit-tap-highlight-color:transparent;
+    border:0; border-radius:0; background:none; color:#333;
+    font-size:13px; cursor:pointer;
+  }
+  .tsf-btn:active{ color:#999; }
+  mark.tsf-hit{ background:#fff3a3; color:inherit; padding:0; border-radius:0; }
+  mark.tsf-hit.tsf-cur{ background:#ff9632; }
+</style>
+</div>
+<script>
+(function () {
+  function init(box) {
+    if (box.getAttribute('data-tsf-init')) return;
+    box.setAttribute('data-tsf-init', '1');
+
+    // 검색 범위: 글 본문
+    var root = box.closest('.tt_article_useless_p_margin, .contents_style, .entry-content, .article_view, .article-view, article') || box.parentNode.parentNode;
+
+    var input = box.querySelector('.tsf-input');
+    var countEl = box.querySelector('.tsf-count');
+    var marks = [], cur = -1, timer = null;
+
+    function update() {
+      countEl.textContent = marks.length ? (cur + 1) + '/' + marks.length : (input.value.trim() ? '0/0' : '0/0');
+    }
+
+    function clearMarks() {
+      marks.forEach(function (m) {
+        var p = m.parentNode;
+        if (!p) return;
+        p.replaceChild(document.createTextNode(m.textContent), m);
+        p.normalize();
+      });
+      marks = []; cur = -1;
+    }
+
+    function search(q) {
+      clearMarks();
+      q = q.trim();
+      if (!q) { update(); return; }
+      var lq = q.toLowerCase();
+
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode: function (n) {
+          if (!n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          if (box.contains(n)) return NodeFilter.FILTER_REJECT;
+          if (n.parentNode.closest('script,style,noscript,textarea')) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      var nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      nodes.forEach(function (node) {
+        var text = node.nodeValue, lt = text.toLowerCase(), idx = lt.indexOf(lq);
+        if (idx < 0) return;
+        var frag = document.createDocumentFragment(), last = 0;
+        while (idx > -1) {
+          frag.appendChild(document.createTextNode(text.slice(last, idx)));
+          var m = document.createElement('mark');
+          m.className = 'tsf-hit';
+          m.textContent = text.slice(idx, idx + q.length);
+          frag.appendChild(m);
+          marks.push(m);
+          last = idx + q.length;
+          idx = lt.indexOf(lq, last);
+        }
+        frag.appendChild(document.createTextNode(text.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+      });
+
+      if (marks.length) go(0); else update();
+    }
+
+    function go(i) {
+      if (!marks.length) return;
+      if (cur > -1 && marks[cur]) marks[cur].classList.remove('tsf-cur');
+      cur = (i + marks.length) % marks.length;
+      marks[cur].classList.add('tsf-cur');
+      marks[cur].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      update();
+    }
+
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () { search(input.value); }, 300);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (e.isComposing) return;
+        if (marks.length) go(e.shiftKey ? cur - 1 : cur + 1);
+        else search(input.value);
+      }
+    });
+    box.querySelector('.tsf-next').addEventListener('click', function () { go(cur + 1); });
+    box.querySelector('.tsf-prev').addEventListener('click', function () { go(cur - 1); });
+
+    // 스크롤 시: 화면 맨 위에 고정
+    var wrap = box.parentNode, fixed = false;
+    function follow() {
+      var w = wrap.getBoundingClientRect();
+      var r = root.getBoundingClientRect();
+      var should = w.top < 0 && r.bottom > box.offsetHeight + 40;
+      if (should) {
+        if (!fixed) {
+          wrap.style.height = box.offsetHeight + 'px';
+          box.classList.add('tsf-fixed');
+          fixed = true;
+        }
+        box.style.left = w.left + 'px';
+        box.style.width = w.width + 'px';
+      } else if (fixed) {
+        box.classList.remove('tsf-fixed');
+        box.style.left = box.style.width = wrap.style.height = '';
+        fixed = false;
+      }
+    }
+    window.addEventListener('scroll', follow, { passive: true });
+    window.addEventListener('resize', follow);
+    follow();
+  }
+
+  document.querySelectorAll('.tsf-box').forEach(init);
+})();
+<\/script>
+<!-- ============================ -->
+`;
+
+    function addSearchBar(htmlString) {
+      if (htmlString.includes('class="tsf-wrap"')) return { out: htmlString, added: false };
+      return { out: SEARCH_BAR_HTML + "\n<!-- 로그 -->\n" + htmlString, added: true };
+    }
 
     const inputEl = document.getElementById("input");
     const outputEl = document.getElementById("output");
@@ -280,10 +421,14 @@
         return;
       }
 
+      const ok = confirm("일괄 실행하시겠습니까?\n(hidden 블록 삭제 + 다이스 박스 크기 조절 + 검색 바 추가)");
+      if (!ok) return;
+
       const rep = replaceDiceBoxWidth(raw);
       const rm = removeHiddenBlocks(rep.out);
+      const sb = addSearchBar(rm.out);
 
-      setOutput(rm.out, `전체 실행 완료: hidden ${rm.removed}개 제거 / 다이스박스 ${rep.count}곳 변경`);
+      setOutput(sb.out, `전체 실행 완료: hidden ${rm.removed}개 제거 / 다이스박스 ${rep.count}곳 변경 / 검색 바 ${sb.added ? "추가" : "이미 있음"}`);
     });
 
     document.getElementById("removeHidden").addEventListener("click", () => {
@@ -306,6 +451,17 @@
 
       const rep = replaceDiceBoxWidth(raw);
       setOutput(rep.out, `다이스 박스 크기 조절 완료: ${rep.count}곳 (px → 100%)`);
+    });
+
+    document.getElementById("addSearch").addEventListener("click", () => {
+      const raw = inputEl.value || "";
+      if (!raw.trim()) {
+        setOutput("", "입력값이 비어 있습니다.");
+        return;
+      }
+
+      const sb = addSearchBar(raw);
+      setOutput(sb.out, sb.added ? "검색 바를 맨 위에 추가했습니다." : "이미 검색 바가 들어 있어서 추가하지 않았습니다.");
     });
 
     document.getElementById("copy").addEventListener("click", async () => {
